@@ -1,29 +1,26 @@
+extern crate minigrep;
+
 // std::env::argsでコマンドライン引き数を読み取れるようにする
 use std::env;
-use std::fs::File;
-use std::io::prelude::*;
+use std::process;
+
+use minigrep::{run, Config};
 
 fn main() {
+    // コマンドライン引数をコレクションにしてargs変数にぶち込む
     let args: Vec<String> = env::args().collect();
     // env::argsはminigrepに与えられたコマンドライン引き数のイテレータを返す
     // collectはコレクションを返す、あと変数に格納するときは型を明示する必要あり
-    let query = &args[1];
-    let filename = &args[2];
 
-    // {}を探しています
-    println!("検索中:{}", query);
-    // {}というファイルの中
-    println!("該当ファイル:{}", filename);
+    // argsのなかみを借用して、Configインスタンスを生成
+    // unwrap_or_else以下でエラー時の処理を記述
+    let config = Config::new(&args).unwrap_or_else(|err| {
+        eprintln!("引き数解析時に問題が発生しました:{}", err);
+        process::exit(1);
+    });
 
-    // ファイルが見つからない場合expect
-    let mut f = File::open(filename).expect("ファイルが見つかりません。");
-
-    let mut contents = String::new();
-
-    // ファイルを読み込んで、書かれてる内容をcontentsにぶち込む
-    f.read_to_string(&mut contents)
-        .expect("ファイルの読み込み中に問題がありました。");
-
-    // ファイルに書いてある文字を表示
-    println!("テキスト内容:\n{}", contents);
+    if let Err(e) = run(config) {
+        eprintln!("アプリケーションエラーが発生しました:{}", e);
+        process::exit(1);
+    };
 }
